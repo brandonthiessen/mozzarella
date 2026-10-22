@@ -1,5 +1,4 @@
-#ifndef __MOVE_GENERATION_H__
-#define __MOVE_GENERATION_H__
+#pragma once
 
 #include <vector>
 #include <iostream>
@@ -52,5 +51,3 @@ bool is_in_check2(Position *p, Player player, uint32_t move);
 bool is_in_sliding_check2(Position *p, Player player, uint32_t move);
 
 void render_bitboard(uint64_t bb, int origin_sq, char symbol);
-
-#endif

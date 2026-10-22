@@ -1,8 +1,8 @@
 #include "search.h"
 #include "move.h"
-#include <cstdint>
 
 #include "log.h" // DEBUG LOGGING
+#include "tt.h"
 
 uint64_t nodes = 0;
 uint64_t qnodes = 0;
@@ -43,13 +43,6 @@ inline int mvv_lva(uint32_t m) {
 MovePicker::MovePicker(int tt_mb) :
     tt(tt_mb) {}
 
-
-/*
- * Destructor for the MovePicker class.
- */
-MovePicker::~MovePicker() {
-    // TODO: implement?
-}
 
 /*
  * Public facing interface for the MovePicker. Returns the 32-bit encoded move which represents

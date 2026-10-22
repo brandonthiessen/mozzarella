@@ -1,5 +1,4 @@
-#ifndef __MOVE_H__
-#define __MOVE_H__
+#pragma once
 
 #include <cstdint>
 
@@ -44,5 +43,3 @@ Piece get_piece(uint32_t move);
 Piece get_captured(uint32_t move);
 Piece get_promotion(uint32_t move);
 uint32_t get_flags(uint32_t move);
-
-#endif

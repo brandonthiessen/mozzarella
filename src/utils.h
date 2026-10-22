@@ -1,5 +1,4 @@
-#ifndef __CHESS_UTILS_H__
-#define __CHESS_UTILS_H__
+#pragma once
 
 #include <cstdint>
 #include <map>
@@ -70,4 +69,3 @@ std::vector<std::string> split_str(const std:: string& s, char delimiter);
 
 // Output the chess board to the console.
 void render_board(void *v);
-#endif

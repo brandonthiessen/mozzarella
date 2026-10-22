@@ -18,7 +18,7 @@ TranspositionTable::TranspositionTable(size_t mb) {
  * Destructor for the TranspositionTable.
  */
 TranspositionTable::~TranspositionTable() {
-    delete[] this->table;
+    delete[] table;
 }
 
 /*

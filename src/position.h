@@ -1,5 +1,4 @@
-#ifndef __POSITION_H__
-#define __POSITION_H__
+#pragma once
 
 #include <string>
 #include <iostream>
@@ -162,5 +161,3 @@ const int PST[2][5][64] = {
         }
     }
 };
-
-#endif

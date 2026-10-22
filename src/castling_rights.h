@@ -1,5 +1,4 @@
-#ifndef CASTLING_RIGHTS_H
-#define CASTLING_RIGHTS_H
+#pragma once
 
 #include <cstdint>
 
@@ -8,5 +7,3 @@ enum CastlingRights: uint8_t {
     QROOK = 1 << 1,
     KROOK = 1 << 2
 };
-
-#endif

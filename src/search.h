@@ -1,5 +1,4 @@
-#ifndef __SEARCH_H__
-#define __SEARCH_H__
+#pragma once
 
 #include <fstream>
 
@@ -17,8 +16,6 @@ class MovePicker {
 
         MovePicker(int tt_mb);
 
-        ~MovePicker();
-
         uint32_t find_best_move(Position *p, int ms);
         uint32_t find_best_move_fixed_depth(Position *p, int depth);
         TranspositionTable tt;
@@ -31,5 +28,3 @@ class MovePicker {
 // Most Valuable Victim : Least Valuable Attacker - move ordering to get higher value moves,
 // like pxQ over lower ones, like qxP
 int mvv_lva(uint32_t move);
-
-#endif
