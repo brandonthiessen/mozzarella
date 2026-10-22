@@ -1,8 +1,18 @@
 #include "search.h"
-#include "move.h"
 
-#include "log.h" // DEBUG LOGGING
+#include <algorithm>
+#include <array>
+#include <ostream>
+
+#include "evaluation.h"
+#include "log.h"
+#include "move_generation.h"
+#include "move.h"
+#include "player.h"
+#include "position.h"
+#include "timer.h"
 #include "tt.h"
+#include "utils.h"
 
 uint64_t nodes = 0;
 uint64_t qnodes = 0;

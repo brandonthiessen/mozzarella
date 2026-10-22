@@ -2,14 +2,11 @@
 
 #include <cstdint>
 #include <map>
-#include <sstream>
-#include <iostream>
 #include <string>
+#include <vector>
 
-#include "move.h"
 #include "piece.h"
 #include "player.h"
-#include "position.h"
 
 
 const std::map<char, Piece> _chtopc = {
@@ -30,6 +27,7 @@ inline int pop_lsb(uint64_t &bb) {
 }
 #elif defined(_MSC_VER)
 #include <intrin.h>
+
 inline int pop_lsb(uint64_t &bb) {
     unsigned long index;
     _BitScanForward64(&index, bb);

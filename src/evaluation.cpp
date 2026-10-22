@@ -1,5 +1,8 @@
 #include "evaluation.h"
 
+#include "player.h"
+#include "position.h"
+
 // Returns a static evaluation for white
 int evaluate(Position *p) {
     // return p->material_value[Player::WHITE] - p->material_value[Player::BLACK];

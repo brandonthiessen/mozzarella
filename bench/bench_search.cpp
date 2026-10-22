@@ -1,5 +1,7 @@
 #include <chrono>
 #include <iostream>
+#include <string>
+
 #include "position.h"
 #include "search.h"
 

@@ -1,9 +1,15 @@
 #include "move_generation.h"
+
+#include <cmath>
+#include <cstdint>
+#include <iostream>
+#include <vector>
+
+#include "castling_rights.h"
 #include "move.h"
 #include "piece.h"
-#include <cstdint>
-
-#include "log.h"
+#include "position.h"
+#include "utils.h"
 
 uint64_t PAWN_ADVANCE_MASKS[2][64] = {
     {

@@ -1,4 +1,4 @@
-#include <string.h>
+#include <cstring>
 
 #include "tt.h"
 
@@ -62,6 +62,6 @@ void TranspositionTable::store(uint64_t key, int depth, int score, int alpha, in
  * Zeroes out the transposition table and reset occupancy count.
  */
 void TranspositionTable::clear() {
-    memset(this->table, 0, (this->size * sizeof(TTEntry)));
+    std::memset(this->table, 0, (this->size * sizeof(TTEntry)));
     this->occupancy = 0;
 }

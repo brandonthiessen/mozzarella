@@ -1,11 +1,7 @@
 #pragma once
 
-#include "position.h"
-#include "move_generation.h"
-
 #include <cstdint>
-#include <iostream>
-#include <cassert>
-#include <string>
+
+#include "position.h"
 
 uint64_t perft(Position *p, int depth);

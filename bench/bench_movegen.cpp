@@ -1,5 +1,10 @@
+#include <array>
 #include <chrono>
+#include <cstdint>
 #include <iostream>
+#include <random>
+#include <string>
+
 #include "position.h"
 #include "move_generation.h"
 

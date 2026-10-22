@@ -1,16 +1,10 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
-#include <iostream>
-#include <map>
-#include <chrono>
-#include <random>
+#include <vector>
 
-#include "castling_rights.h"
-#include "move.h"
-#include "piece.h"
 #include "player.h"
-#include "utils.h"
 
 // Position struct, containing all relevant game state information
 struct Position {

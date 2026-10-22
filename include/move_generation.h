@@ -1,15 +1,10 @@
 #pragma once
 
-#include <vector>
-#include <iostream>
-#include <cmath>
 #include <cstdint>
 
 #include "position.h"
 #include "piece.h"
 #include "player.h"
-#include "utils.h"
-
 
 extern uint64_t PAWN_ADVANCE_MASKS[2][64];
 extern uint64_t PAWN_ATTACK_MASKS[2][64];

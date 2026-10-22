@@ -1,5 +1,10 @@
 #include "perft.h"
 
+#include <array>
+
+#include "move_generation.h"
+#include "position.h"
+
 uint64_t perft(Position *p, int depth) {
     if (depth == 0) return 1;
     std::array<uint32_t, 256> moves;

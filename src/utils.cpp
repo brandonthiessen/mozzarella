@@ -1,5 +1,12 @@
 #include "utils.h"
 
+#include <cctype>
+#include <iostream>
+#include <sstream>
+
+#include "move.h"
+#include "position.h"
+
 const std::string piece_chars[2][6] = {
     { "♟", "♞", "♝", "♜", "♛", "♚" }, // White
     { "♙", "♘", "♗", "♖", "♕", "♔" }  // Black

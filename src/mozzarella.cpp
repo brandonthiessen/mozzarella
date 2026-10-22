@@ -1,13 +1,20 @@
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <string>
+
+#include "log.h"
 #include "move_generation.h"
 #include "perft.h"
-#include "utils.h"
+#include "player.h"
+#include "position.h"
 #include "search.h"
+#include "tt.h"
 #include "uci.h"
-#include <vector>
-#include <sstream>
-
-// DEBUG LOGGING
-#include "log.h"
+#include "utils.h"
 
 void uci_loop() {
     std::string line;

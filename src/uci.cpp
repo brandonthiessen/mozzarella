@@ -1,5 +1,9 @@
 #include "uci.h"
 
+#include "move.h"
+#include "piece.h"
+#include "utils.h"
+
 uint32_t parse_move(Position pos, std::string move_str) {
     int from_sq = coord_to_sq(move_str.substr(0, 2));
     int to_sq = coord_to_sq(move_str.substr(2, 4));

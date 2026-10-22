@@ -1,5 +1,13 @@
 #include "position.h"
 
+#include <chrono>
+#include <random>
+
+#include "castling_rights.h"
+#include "move.h"
+#include "piece.h"
+#include "utils.h"
+
 uint64_t _ZOBRIST_ARR[781];
 
 bool ZOB_INIT = false;

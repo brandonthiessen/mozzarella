@@ -1,12 +1,9 @@
 #pragma once
 
-#include <fstream>
+#include <climits>
+#include <cstdint>
 
-#include "evaluation.h"
-#include "move_generation.h"
-#include "player.h"
 #include "position.h"
-#include "timer.h"
 #include "tt.h"
 
 const int MATE_SCORE = 1000000;
