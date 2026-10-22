@@ -1,7 +1,7 @@
 #include <chrono>
 #include <iostream>
-#include "../src/position.h"
-#include "../src/move_generation.h"
+#include "position.h"
+#include "move_generation.h"
 
 
 int main() {

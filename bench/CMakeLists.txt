@@ -1,0 +1,5 @@
+add_executable(bench_movegen bench_movegen.cpp)
+target_link_libraries(bench_movegen PRIVATE mozzarella_core)
+
+add_executable(bench_search bench_search.cpp)
+target_link_libraries(bench_search PRIVATE mozzarella_core)

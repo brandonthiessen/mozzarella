@@ -1,7 +1,7 @@
 #include <chrono>
 #include <iostream>
-#include "../src/position.h"
-#include "../src/search.h"
+#include "position.h"
+#include "search.h"
 
 
 int main() {
