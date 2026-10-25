@@ -1,52 +1,140 @@
+#include <benchmark/benchmark.h>
+
 #include <array>
-#include <chrono>
 #include <cstdint>
-#include <iostream>
-#include <random>
+#include <iterator>
 #include <string>
 
-#include "position.h"
 #include "move_generation.h"
+#include "position.h"
 
+namespace {
 
-int main() {
-    int num_walks = 200;
-    int num_iterations = 10000;
+using Generator = int (*)(Position*, uint32_t*, bool);
 
-    std::cout << "Generating " << num_iterations << " sets of " << num_walks << " random walks\n";
+struct TestPosition {
+    const char* name;
+    const char* fen;
+};
 
-    std::string STARTPOS = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+constexpr TestPosition positions[] = {
+    {
+        "Start",
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    },
+    {
+        "Kiwipete",
+        "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"
+    },
+    {
+        "Middlegame",
+        "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10"
+    },
+};
 
-    auto start = std::chrono::steady_clock::now();
+constexpr std::size_t MAX_MOVES = 256;
 
-    for (int i = 0; i < num_iterations; i++) {
+void FinishCounters(benchmark::State& state, int expected_count) {
+    state.counters["moves_per_call"] =
+        static_cast<double>(expected_count);
 
-        int seed = 789617 + i;
-        std::mt19937 rng(seed);
+    state.counters["calls_per_second"] = benchmark::Counter(
+        static_cast<double>(state.iterations()),
+        benchmark::Counter::kIsRate
+    );
+}
 
-        Position p = Position(STARTPOS);
+void BM_GeneratePieceMoves(
+    benchmark::State& state,
+    std::size_t index,
+    Generator generator
+) {
+    const auto& test = positions[index];
 
-        for (int j = 0; j < num_walks; j++) {
+    Position position{std::string(test.fen)};
+    std::array<uint32_t, MAX_MOVES> moves{};
 
-            std::array<uint32_t, 256> moves;
-            int n = generate_legal_moves(&p, moves.data(), false);
-            if (n == 0) break;
+    const int expected_count =
+        generator(&position, moves.data(), false);
 
-            std::uniform_int_distribution<uint64_t> dist(0, n - 1);
-            uint32_t move = moves[dist(rng)];
+    for (auto _ : state) {
+        int count = generator(&position, moves.data(), false);
 
-            p.move(move);
+        benchmark::DoNotOptimize(&count);
 
+        if (count > 0) {
+            benchmark::DoNotOptimize(&moves[count - 1]);
         }
+
+        benchmark::ClobberMemory();
     }
 
-
-    auto now = std::chrono::steady_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
-
-    std::cout << "Done\n";
-
-    std::cout << "Time elapsed: " << elapsed << "ms\n";
-
-    return 0;
+    FinishCounters(state, expected_count);
 }
+
+void BM_GenerateLegalMoves(
+    benchmark::State& state,
+    std::size_t index
+) {
+    const auto& test = positions[index];
+
+    Position position{std::string(test.fen)};
+    std::array<uint32_t, MAX_MOVES> moves{};
+
+    const int expected_count =
+        generate_legal_moves(&position, moves.data(), false);
+
+    for (auto _ : state) {
+        int count =
+            generate_legal_moves(&position, moves.data(), false);
+
+        benchmark::DoNotOptimize(&count);
+
+        if (count > 0) {
+            benchmark::DoNotOptimize(&moves[count - 1]);
+        }
+
+        benchmark::ClobberMemory();
+    }
+
+    FinishCounters(state, expected_count);
+}
+
+void RegisterPieceBenchmarks(const char* name, Generator generator) {
+    for (std::size_t i = 0; i < std::size(positions); ++i) {
+        benchmark::RegisterBenchmark(
+            (std::string("BM_GeneratePieceMoves/") + name + "/" +
+             positions[i].name).c_str(),
+            [i, generator](benchmark::State& state) {
+                BM_GeneratePieceMoves(state, i, generator);
+            }
+        );
+    }
+}
+
+void RegisterLegalMoveBenchmarks() {
+    for (std::size_t i = 0; i < std::size(positions); ++i) {
+        benchmark::RegisterBenchmark(
+            (std::string("BM_GenerateLegalMoves/") +
+             positions[i].name).c_str(),
+            [i](benchmark::State& state) {
+                BM_GenerateLegalMoves(state, i);
+            }
+        );
+    }
+}
+
+const bool registered = [] {
+    RegisterPieceBenchmarks("Pawns", generate_pawn_moves);
+    RegisterPieceBenchmarks("Knights", generate_knight_moves);
+    RegisterPieceBenchmarks("Bishops", generate_bishop_moves);
+    RegisterPieceBenchmarks("Rooks", generate_rook_moves);
+    RegisterPieceBenchmarks("Queens", generate_queen_moves);
+    RegisterPieceBenchmarks("Kings", generate_king_moves);
+    RegisterLegalMoveBenchmarks();
+    return true;
+}();
+
+} // namespace
+
+BENCHMARK_MAIN();
