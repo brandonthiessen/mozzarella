@@ -5,12 +5,11 @@
 #include <iterator>
 #include <string>
 
-#include "move_generation.h"
 #include "position.h"
 
 namespace {
 
-using Generator = int (*)(Position*, uint32_t*, bool);
+using Generator = int (mozzarella::Position::*)(uint32_t*, bool);
 
 struct TestPosition {
     const char* name;
@@ -51,14 +50,14 @@ void BM_GeneratePieceMoves(
 ) {
     const auto& test = positions[index];
 
-    Position position{std::string(test.fen)};
+    mozzarella::Position position{std::string(test.fen)};
     std::array<uint32_t, MAX_MOVES> moves{};
 
     const int expected_count =
-        generator(&position, moves.data(), false);
+        (position.*generator)(moves.data(), false);
 
     for (auto _ : state) {
-        int count = generator(&position, moves.data(), false);
+        int count = (position.*generator)(moves.data(), false);
 
         benchmark::DoNotOptimize(&count);
 
@@ -78,15 +77,15 @@ void BM_GenerateLegalMoves(
 ) {
     const auto& test = positions[index];
 
-    Position position{std::string(test.fen)};
+    mozzarella::Position position{std::string(test.fen)};
     std::array<uint32_t, MAX_MOVES> moves{};
 
     const int expected_count =
-        generate_legal_moves(&position, moves.data(), false);
+        position.generate_legal_moves(moves.data(), false);
 
     for (auto _ : state) {
         int count =
-            generate_legal_moves(&position, moves.data(), false);
+            position.generate_legal_moves(moves.data(), false);
 
         benchmark::DoNotOptimize(&count);
 
@@ -125,12 +124,12 @@ void RegisterLegalMoveBenchmarks() {
 }
 
 const bool registered = [] {
-    RegisterPieceBenchmarks("Pawns", generate_pawn_moves);
-    RegisterPieceBenchmarks("Knights", generate_knight_moves);
-    RegisterPieceBenchmarks("Bishops", generate_bishop_moves);
-    RegisterPieceBenchmarks("Rooks", generate_rook_moves);
-    RegisterPieceBenchmarks("Queens", generate_queen_moves);
-    RegisterPieceBenchmarks("Kings", generate_king_moves);
+    RegisterPieceBenchmarks("Pawns", &mozzarella::Position::generate_pawn_moves);
+    RegisterPieceBenchmarks("Knights", &mozzarella::Position::generate_knight_moves);
+    RegisterPieceBenchmarks("Bishops", &mozzarella::Position::generate_bishop_moves);
+    RegisterPieceBenchmarks("Rooks", &mozzarella::Position::generate_rook_moves);
+    RegisterPieceBenchmarks("Queens", &mozzarella::Position::generate_queen_moves);
+    RegisterPieceBenchmarks("Kings", &mozzarella::Position::generate_king_moves);
     RegisterLegalMoveBenchmarks();
     return true;
 }();

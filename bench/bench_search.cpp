@@ -37,12 +37,12 @@ void BM_SearchFixedDepth(benchmark::State& state, std::size_t index) {
     for (auto _ : state) {
         state.PauseTiming();
 
-        Position position{std::string(test.fen)};
-        MovePicker move_picker{64};
+        mozzarella::Position position{std::string(test.fen)};
+        mozzarella::MovePicker move_picker{64};
 
         state.ResumeTiming();
 
-        const auto best = move_picker.find_best_move_fixed_depth(&position, test.depth);
+        const auto best = move_picker.find_best_move_fixed_depth(position, test.depth);
 
         if (best == 0) {
             state.SkipWithError("Search returned an invalid move");

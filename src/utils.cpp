@@ -4,16 +4,18 @@
 #include <iostream>
 #include <sstream>
 
+#include "bitboard.h"
 #include "move.h"
 #include "position.h"
+
+namespace mozzarella {
 
 const std::string piece_chars[2][6] = {
     { "♟", "♞", "♝", "♜", "♛", "♚" }, // White
     { "♙", "♘", "♗", "♖", "♕", "♔" }  // Black
 };
 
-void render_board(void *v) {
-    Position *p = (Position *)v;
+void render_board(mozzarella::Position& p) {
     
     for (int rank = 7; rank >= 0; --rank) {
         std::cout << rank + 1 << " ";
@@ -22,7 +24,7 @@ void render_board(void *v) {
             std::string piece_char = ".";
             for (int pl = 0; pl < 2; ++pl) {
                 for (int pc = 0; pc < 6; ++pc) {
-                    if (p->bitboards[pl][pc] & (1ULL << sq)) {
+                    if (p.bitboards[pl][pc] & Bitboard{1ULL << sq}) {
                         piece_char = piece_chars[pl][pc];
                         goto found;
                     }
@@ -102,4 +104,4 @@ std::vector<std::string> split_str(const std:: string& s, char delimiter) {
     return tokens;
 }
 
-
+}

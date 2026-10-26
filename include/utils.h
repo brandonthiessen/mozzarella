@@ -1,15 +1,16 @@
 #pragma once
 
 #include <cstdint>
-#include <map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "piece.h"
 #include "player.h"
 
+namespace mozzarella {
 
-const std::map<char, Piece> _chtopc = {
+const std::unordered_map<char, Piece> _chtopc = {
     {'p', Piece::PAWN},
     {'n', Piece::KNIGHT},
     {'b', Piece::BISHOP},
@@ -17,35 +18,6 @@ const std::map<char, Piece> _chtopc = {
     {'q', Piece::QUEEN},
     {'k', Piece::KING},
 };
-
-// Get the least significant bit index of the 64-bit bitboard <bb>
-#if defined(__GNUC__) || defined(__clang__)
-inline int pop_lsb(uint64_t &bb) {
-    int index = __builtin_ctzll(bb);  // find LSB index
-    bb &= bb - 1;                     // clear LSB
-    return index;
-}
-#elif defined(_MSC_VER)
-#include <intrin.h>
-
-inline int pop_lsb(uint64_t &bb) {
-    unsigned long index;
-    _BitScanForward64(&index, bb);
-    bb &= bb - 1;
-    return static_cast<int>(index);
-}
-#else
-inline int pop_lsb(uint64_t &bb) {
-    int index = 0;
-    uint64_t b = bb;
-    while ((b & 1) == 0) {
-        b >>= 1;
-        ++index;
-    }
-    bb &= bb - 1;
-    return index;
-}
-#endif
 
 // Translate a standard coordinate string into a square number (0 - 63).
 int coord_to_sq(std::string str);
@@ -67,3 +39,5 @@ std::vector<std::string> split_str(const std:: string& s, char delimiter);
 
 // Output the chess board to the console.
 void render_board(void *v);
+
+}

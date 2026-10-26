@@ -1,6 +1,17 @@
 #pragma once
 
-enum Piece: int { PAWN = 0, KNIGHT = 1, BISHOP = 2, ROOK = 3, QUEEN = 4, KING = 5 };
+#include <cstdint>
 
-// Declaration of function that returns the material value of a piece
-int piece_value(Piece piece);
+enum Piece : uint8_t {
+    PAWN,
+    KNIGHT,
+    BISHOP,
+    ROOK,
+    QUEEN,
+    KING
+};
+
+constexpr int piece_value(Piece piece) {
+    constexpr int values[] = {100, 320, 330, 500, 900, 0};
+    return values[piece];
+}

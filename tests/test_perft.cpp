@@ -24,9 +24,9 @@ void expect_perft_results(
                      << "depth = " << cases[i].depth
                      << ", FEN = " << fen);
 
-        Position position(fen);
+        mozzarella::Position position(fen);
         EXPECT_EQ(
-            perft(&position, cases[i].depth),
+            mozzarella::perft(position, cases[i].depth),
             cases[i].expected_nodes
         );
     }
@@ -40,8 +40,11 @@ TEST(PerftTest, StartPosition) {
         {0, 1},
         {1, 20},
         {2, 400},
-        {3, 8902},
-        {4, 197281},
+        {3, 8'902},
+        {4, 197'281},
+        {5, 4'865'609},
+        {6, 119'060'324},
+        // {7, 3'195'901'860},
     };
 
     expect_perft_results(fen, cases, std::size(cases));
@@ -58,6 +61,7 @@ TEST(PerftTest, Position2_Kiwipete) {
         {3, 97862},
         {4, 4085603},
         {5, 193690690},
+        // {6, 8'031'647'685},
     };
 
     expect_perft_results(fen, cases, std::size(cases));

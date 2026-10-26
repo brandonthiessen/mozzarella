@@ -5,4 +5,5 @@
 
 #include "position.h"
 
-uint32_t parse_move(Position pos, std::string move_str);
+void uci_loop();
+uint32_t parse_move(mozzarella::Position pos, std::string move_str);

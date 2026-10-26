@@ -6,13 +6,15 @@
 
 #include "evaluation.h"
 #include "log.h"
-#include "move_generation.h"
 #include "move.h"
 #include "player.h"
 #include "position.h"
 #include "timer.h"
 #include "tt.h"
 #include "utils.h"
+#include "zobrist.h"
+
+namespace mozzarella {
 
 uint64_t nodes = 0;
 uint64_t qnodes = 0;
@@ -62,7 +64,7 @@ MovePicker::MovePicker(int tt_mb) :
  *
  * Internally relies on search() and q_search() in order to search the game space.
  */
-uint32_t MovePicker::find_best_move_fixed_depth(Position *p, int depth) {
+uint32_t MovePicker::find_best_move_fixed_depth(Position& p, int depth) {
 
     nodes = 0;
     qnodes = 0;
@@ -72,13 +74,13 @@ uint32_t MovePicker::find_best_move_fixed_depth(Position *p, int depth) {
     uint32_t best_move;
 
     std::array<uint32_t, 256> moves;
-    int n = generate_legal_moves(p, moves.data(), false);
+    int n = p.generate_legal_moves(moves.data(), false);
 
     for (int i = 0; i < n; i++) {
         uint32_t m = moves[i];
-        p->move(m);
-        int score = -(this->search(p, depth - 1, 0, -MATE_SCORE, MATE_SCORE));
-        p->unmove(m);
+        p.make_move(m);
+        int score = -(search(p, depth - 1, 0, -MATE_SCORE, MATE_SCORE));
+        p.unmake_move(m);
 
         if (score > best_score) {
             best_score = score;
@@ -102,7 +104,7 @@ uint32_t MovePicker::find_best_move_fixed_depth(Position *p, int depth) {
  *
  * Internally relies on search() and q_search() in order to search the game space.
  */
-uint32_t MovePicker::find_best_move(Position *p, int ms) {
+uint32_t MovePicker::find_best_move(Position& p, int ms) {
 
     nodes = 0;
     qnodes = 0;
@@ -114,7 +116,7 @@ uint32_t MovePicker::find_best_move(Position *p, int ms) {
     uint32_t best_move;
 
     std::array<uint32_t, 256> moves;
-    int n = generate_legal_moves(p, moves.data(), false);
+    int n = p.generate_legal_moves(moves.data(), false);
 
     for (int depth = 1; ; depth++) {
 
@@ -129,9 +131,9 @@ uint32_t MovePicker::find_best_move(Position *p, int ms) {
 
             if (time_up()) break;
 
-            p->move(m);
-            int score = -(this->search(p, depth - 1, 0, -beta, -alpha));
-            p->unmove(m);
+            p.make_move(m);
+            int score = -(search(p, depth - 1, 0, -beta, -alpha));
+            p.unmake_move(m);
 
             if (score > iter_best_score) {
                 iter_best_score = score;
@@ -164,27 +166,27 @@ uint32_t MovePicker::find_best_move(Position *p, int ms) {
  * Alpha-beta minimax search which recursively searches positions and returns the score of the
  * best move according to the evaluation function at the given depth.
  */
-int MovePicker::search(Position *p, int depth, int ply, int alpha, int beta) {
+int MovePicker::search(Position& p, int depth, int ply, int alpha, int beta) {
     nodes++;
     
     // Probe the transposition table first
-    uint64_t z = p->zobrist();
+    uint64_t z = zobrist.hash(p);
     int probe_score;
-    if (this->tt.probe(z, depth, &probe_score, alpha, beta)) {
+    if (tt.probe(z, depth, &probe_score, alpha, beta)) {
         tt_hits++;
         return probe_score;
     }
 
     std::array<uint32_t, 256> moves;
-    int n = generate_legal_moves(p, moves.data(), false);
+    int n = p.generate_legal_moves(moves.data(), false);
 
     if (depth == 0) {
-        // return (p->player_to_move == Player::WHITE) ? evaluate(p) : -evaluate(p);
+        // return (p.player_to_move == Player::WHITE) ? evaluate(p) : -evaluate(p);
         return q_search(p, ply, 0, alpha, beta);
     }
 
     if (n == 0) {
-        if (is_in_check(p, p->player_to_move)) return -MATE_SCORE + ply; // Checkmate
+        if (p.is_in_check(p.player_to_move)) return -MATE_SCORE + ply; // Checkmate
         else return 0; // Stalemate
     }
 
@@ -215,9 +217,9 @@ int MovePicker::search(Position *p, int depth, int ply, int alpha, int beta) {
     // Search moves in order with alpha-beta pruning
     for (int i = 0; i < n; i++) {
         const auto& sm = scored_list[i];
-        p->move(sm.move);
-        int score = -(this->search(p, depth - 1, ply + 1, -beta, -alpha));
-        p->unmove(sm.move);
+        p.make_move(sm.move);
+        int score = -(search(p, depth - 1, ply + 1, -beta, -alpha));
+        p.unmake_move(sm.move);
 
         if (score > alpha) alpha = score;
         if (score > best_score) best_score = score;
@@ -226,7 +228,7 @@ int MovePicker::search(Position *p, int depth, int ply, int alpha, int beta) {
     }
 
     // Store new entry in the transposition table
-    this->tt.store(z, depth, best_score, alpha_orig, beta);
+    tt.store(z, depth, best_score, alpha_orig, beta);
 
     return best_score;
 }
@@ -239,7 +241,7 @@ int MovePicker::search(Position *p, int depth, int ply, int alpha, int beta) {
  * A "quiet" position is one where there is no immediate tactical move,
  * such as a capture/check/promotion.
  */
-int MovePicker::q_search(Position *p, int ply, int qply, int alpha, int beta) {
+int MovePicker::q_search(Position& p, int ply, int qply, int alpha, int beta) {
     qnodes++;
     if (qply == 0) {
         LOG("QSEARCH ROOT enter alpha=" << alpha << " beta=" << beta);
@@ -250,18 +252,18 @@ int MovePicker::q_search(Position *p, int ply, int qply, int alpha, int beta) {
     // Upper limit to how far q-search can check
     if (qply >= 4) return static_eval_white;
     
-    int best_score = (p->player_to_move == Player::WHITE) ? static_eval_white : -static_eval_white;
+    int best_score = (p.player_to_move == Player::WHITE) ? static_eval_white : -static_eval_white;
 
     if (best_score >= beta) return best_score;
     if (best_score > alpha) alpha = best_score;
 
     std::array<uint32_t, 256> noisy_moves;
-    int n = generate_legal_moves(p, noisy_moves.data(), true);
+    int n = p.generate_legal_moves(noisy_moves.data(), true);
 
     // Terminal node: no moves
     if (n == 0) {
         // If in check, it's checkmate
-        if (is_in_check(p, p->player_to_move)) return -MATE_SCORE + ply;
+        if (p.is_in_check(p.player_to_move)) return -MATE_SCORE + ply;
         return 0; // Otherwise it's stalemate
     }
 
@@ -271,9 +273,9 @@ int MovePicker::q_search(Position *p, int ply, int qply, int alpha, int beta) {
     for (int i = 0; i < n; i++) {
         uint32_t m = noisy_moves[i];
 
-        p->move(m);
+        p.make_move(m);
         int score = -q_search(p, ply + 1, qply + 1, -beta, -alpha);
-        p->unmove(m);
+        p.unmake_move(m);
 
         if (qply == 0) {
             LOG("QSEARCH ROOT move=" << move_to_string(m)
@@ -286,4 +288,6 @@ int MovePicker::q_search(Position *p, int ply, int qply, int alpha, int beta) {
     }
 
     return alpha;
+}
+
 }

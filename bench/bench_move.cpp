@@ -4,7 +4,6 @@
 #include <string>
 
 #include "move.h"
-#include "move_generation.h"
 #include "position.h"
 
 namespace {
@@ -36,10 +35,9 @@ constexpr TestPosition positions[] = {
 
 constexpr std::size_t MAX_MOVES = 256;
 
-uint32_t FindMove(Position& position, int from, int to) {
+uint32_t FindMove(mozzarella::Position& position, int from, int to) {
     uint32_t moves[MAX_MOVES];
-    const int count =
-        generate_legal_moves(&position, moves, false);
+    const int count = position.generate_legal_moves(moves, false);
 
     for (int i = 0; i < count; ++i) {
         if (get_from_sq(moves[i]) == from &&
@@ -53,7 +51,7 @@ uint32_t FindMove(Position& position, int from, int to) {
 
 void BM_MakeUnmake(benchmark::State& state, std::size_t index) {
     const auto& test = positions[index];
-    Position position{std::string(test.fen)};
+    mozzarella::Position position{std::string(test.fen)};
     const uint32_t move =
         FindMove(position, test.move_from, test.move_to);
 
@@ -63,14 +61,14 @@ void BM_MakeUnmake(benchmark::State& state, std::size_t index) {
     }
 
     // Make the Position's memory observable to the compiler
-    Position* escaped_position = &position;
+    mozzarella::Position* escaped_position = &position;
     benchmark::DoNotOptimize(escaped_position);
 
     for (auto _ : state) {
-        position.move(move);
+        position.make_move(move);
         benchmark::ClobberMemory();
 
-        position.unmove(move);
+        position.unmake_move(move);
         benchmark::ClobberMemory();
 
         benchmark::DoNotOptimize(escaped_position);

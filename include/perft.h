@@ -4,4 +4,8 @@
 
 #include "position.h"
 
-uint64_t perft(Position *p, int depth);
+namespace mozzarella {
+
+uint64_t perft(Position& p, int depth);
+
+}

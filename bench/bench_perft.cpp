@@ -34,11 +34,11 @@ constexpr TestPosition positions[] = {
 };
 
 void BM_Perft(benchmark::State& state, const TestPosition& test) {
-    Position position{std::string(test.fen)};
-    const uint64_t expected_nodes = perft(&position, test.depth);
+    mozzarella::Position position{std::string(test.fen)};
+    const uint64_t expected_nodes = mozzarella::perft(position, test.depth);
 
     for (auto _ : state) {
-        const uint64_t nodes = perft(&position, test.depth);
+        const uint64_t nodes = mozzarella::perft(position, test.depth);
 
         benchmark::DoNotOptimize(&nodes);
         benchmark::ClobberMemory();

@@ -1,14 +1,20 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <string>
 #include <vector>
 
+#include "bitboard.h"
+#include "piece.h"
 #include "player.h"
 
+namespace mozzarella {
+
 // Position struct, containing all relevant game state information
-struct Position {
-    uint64_t bitboards[2][6]; // indexed with [player][piece]
+class Position {
+public:
+    std::array<std::array<Bitboard, 6>, 2> bitboards{}; // indexed with [player][piece]
     Player player_to_move;
     uint8_t castling_rights[2];
     int halfmoves; // currently unused
@@ -21,137 +27,42 @@ struct Position {
     std::vector<int> pst_eval_stack; // Store recent position eval
 
     Position() : Position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {}
-
     Position(std::string fen);
 
-    void move(uint32_t move);
+    void make_move(uint32_t move);
+    void unmake_move(uint32_t move);
 
-    void unmove(uint32_t move);
-
-    uint64_t get_occupied(int player);
+    Bitboard get_occupied(int player);
 
     uint64_t zobrist();
+
+    int generate_legal_moves(uint32_t *moves, bool noisy_only);
+
+    int generate_castle_moves(uint32_t *moves, bool noisy_only);
+
+    int generate_en_passant_moves(uint32_t *moves, bool noisy_only);
+
+    int generate_pawn_moves(uint32_t *moves, bool noisy_only);
+
+    int generate_knight_moves(uint32_t *moves, bool noisy_only);
+    int generate_king_moves(uint32_t *moves, bool noisy_only);
+
+    int generate_bishop_moves(uint32_t *moves, bool noisy_only);
+    int generate_rook_moves(uint32_t *moves, bool noisy_only);
+    int generate_queen_moves(uint32_t *moves, bool noisy_only);
+
+    int generate_sliding_moves(Piece piece, int deltas[], int ndeltas, uint32_t *moves, bool noisy_only);
+
+    bool move_gives_check(uint32_t move);
+
+    bool is_direct_attack(Piece moved_piece, int to_sq, int king_sq);
+    bool is_discovered_check(int from_sq, int king_sq);
+
+    bool is_in_check(Player player);
+    bool is_in_sliding_check(Player player);
+
+    bool is_in_check2(Player player, uint32_t move);
+    bool is_in_sliding_check2(Player player, uint32_t move);
 };
-
-
-void init_zobrist();
-
-
-// Piece Square Tables
-// [player][piece][square]
-const int PST[2][5][64] = {
-    {   // White
-        // Pawns
-        {
-             0,  0,  0,  0,  0,  0,  0,  0,
-             5, 10, 10,-20,-20, 10, 10,  5,
-             5, -5,-10,  0,  0,-10, -5,  5,
-             0,  0,  0, 20, 20,  0,  0,  0,
-             5,  5, 10, 25, 25, 10,  5,  5,
-            10, 10, 20, 30, 30, 20, 10, 10,
-            50, 50, 50, 50, 50, 50, 50, 50,
-             0,  0,  0,  0,  0,  0,  0,  0
-        },
-        // Knights
-        {
-            -50,-40,-30,-30,-30,-30,-40,-50,
-            -40,-20,  0,  5,  5,  0,-20,-40,
-            -30,  5, 10, 15, 15, 10,  5,-30,
-            -30,  0, 15, 20, 20, 15,  0,-30,
-            -30,  5, 15, 20, 20, 15,  5,-30,
-            -30,  0, 10, 15, 15, 10,  0,-30,
-            -40,-20,  0,  0,  0,  0,-20,-40,
-            -50,-40,-30,-30,-30,-30,-40,-50
-        },
-        // Bishops
-        {
-            -20,-10,-10,-10,-10,-10,-10,-20,
-            -10,  5,  0,  0,  0,  0,  5,-10,
-            -10, 10, 10, 10, 10, 10, 10,-10,
-            -10,  0, 10, 10, 10, 10,  0,-10,
-            -10,  5,  5, 10, 10,  5,  5,-10,
-            -10,  0,  5, 10, 10,  5,  0,-10,
-            -10,  0,  0,  0,  0,  0,  0,-10,
-            -20,-10,-10,-10,-10,-10,-10,-20
-        },
-        // Rooks
-        {
-              0,  0,  0,  5,  5,  0,  0,  0,
-             -5,  0,  0,  0,  0,  0,  0, -5,
-             -5,  0,  0,  0,  0,  0,  0, -5,
-             -5,  0,  0,  0,  0,  0,  0, -5,
-             -5,  0,  0,  0,  0,  0,  0, -5,
-             -5,  0,  0,  0,  0,  0,  0, -5,
-              5, 10, 10, 10, 10, 10, 10,  5,
-              0,  0,  0,  0,  0,  0,  0,  0
-        },
-        // Queens
-        {
-            -20,-10,-10, -5, -5,-10,-10,-20,
-            -10,  0,  5,  0,  0,  0,  0,-10,
-            -10,  5,  5,  5,  5,  5,  0,-10,
-              0,  0,  5,  5,  5,  5,  0, -5,
-             -5,  0,  5,  5,  5,  5,  0, -5,
-            -10,  0,  5,  5,  5,  5,  0,-10,
-            -10,  0,  0,  0,  0,  0,  0,-10,
-            -20,-10,-10, -5, -5,-10,-10,-20
-        }
-    },
-    {   // Black (negated + flipped vertically)
-        // Pawns
-        {
-             0,  0,  0,  0,  0,  0,  0,  0,
-           -50,-50,-50,-50,-50,-50,-50,-50,
-           -10,-10,-20,-30,-30,-20,-10,-10,
-            -5, -5,-10,-25,-25,-10, -5, -5,
-             0,  0,  0,-20,-20,  0,  0,  0,
-            -5,  5, 10,  0,  0, 10,  5, -5,
-            -5,-10,-10, 20, 20,-10,-10, -5,
-             0,  0,  0,  0,  0,  0,  0,  0
-        },
-        // Knights
-        {
-             50, 40, 30, 30, 30, 30, 40, 50,
-             40, 20,  0,  0,  0,  0, 20, 40,
-             30,  0,-10,-15,-15,-10,  0, 30,
-             30, -5,-15,-20,-20,-15, -5, 30,
-             30,  0,-15,-20,-20,-15,  0, 30,
-             30, -5,-10,-15,-15,-10, -5, 30,
-             40, 20,  0, -5, -5,  0, 20, 40,
-             50, 40, 30, 30, 30, 30, 40, 50
-        },
-        // Bishops
-        {
-             20, 10, 10, 10, 10, 10, 10, 20,
-             10,  0,  0,  0,  0,  0,  0, 10,
-             10,  0, -5,-10,-10, -5,  0, 10,
-             10,  0,-10,-10,-10,-10,  0, 10,
-             10,-10,-10,-10,-10,-10,-10, 10,
-             10, -5,-10,-10,-10,-10, -5, 10,
-             10, -5,  0,  0,  0,  0, -5, 10,
-             20, 10, 10, 10, 10, 10, 10, 20
-        },
-        // Rooks
-        {
-              0,  0,  0,  0,  0,  0,  0,  0,
-             -5,-10,-10,-10,-10,-10,-10, -5,
-              5,  0,  0,  0,  0,  0,  0,  5,
-              5,  0,  0,  0,  0,  0,  0,  5,
-              5,  0,  0,  0,  0,  0,  0,  5,
-              5,  0,  0,  0,  0,  0,  0,  5,
-              0,  0,  0, -5, -5,  0,  0,  0,
-              0,  0,  0,  0,  0,  0,  0,  0
-        },
-        // Queens
-        {
-             20, 10, 10,  5,  5, 10, 10, 20,
-             10,  0,  0,  0,  0,  0,  0, 10,
-             10,  0, -5, -5, -5, -5,  0, 10,
-              0,  0, -5, -5, -5, -5,  0,  5,
-              5,  0, -5, -5, -5, -5,  0,  5,
-             10,  0, -5, -5, -5, -5,  0, 10,
-             10,  0,  0,  0,  0,  0,  0, 10,
-             20, 10, 10,  5,  5, 10, 10, 20
-        }
-    }
-};
+    
+} // namespace mozzarella

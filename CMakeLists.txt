@@ -15,18 +15,17 @@ add_library(mozzarella_core
     src/move_generation.cpp
     src/move.cpp
     src/perft.cpp
-    src/piece.cpp
     src/position.cpp
     src/search.cpp
     src/timer.cpp
     src/tt.cpp
-    src/uci.cpp
     src/utils.cpp
+    src/zobrist.cpp
 )
 
 target_include_directories(mozzarella_core PUBLIC include)
 
-add_executable(mozzarella src/mozzarella.cpp)
+add_executable(mozzarella src/uci.cpp)
 target_link_libraries(mozzarella PRIVATE mozzarella_core)
 
 if(MOZZARELLA_BUILD_TESTS)
