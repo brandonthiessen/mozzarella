@@ -8,7 +8,7 @@
 
 namespace mozzarella {
 
-class Bitboard {
+class [[nodiscard]] Bitboard {
 public:
     class Iterator {
     public:
