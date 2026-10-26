@@ -73,6 +73,8 @@ public:
     constexpr void clear(int square);
     [[nodiscard]] constexpr bool test(int square) const;
 
+    [[nodiscard]] constexpr uint64_t value() const;
+
     constexpr Iterator begin() const;
     constexpr Iterator end() const;
 
@@ -225,6 +227,11 @@ constexpr Bitboard::Iterator
 Bitboard::end() const
 {
     return Iterator{0};
+}
+
+[[nodiscard]] constexpr uint64_t Bitboard::value() const
+{
+    return bitboard_;
 }
 
 } // namespace mozzarella
