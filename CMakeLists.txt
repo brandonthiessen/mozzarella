@@ -12,6 +12,7 @@ option(MOZZARELLA_BUILD_BENCHMARKS "Build benchmarks" OFF)
 add_library(mozzarella_core
     src/evaluation.cpp
     src/log.cpp
+    src/magics.cpp
     src/move_generation.cpp
     src/move.cpp
     src/perft.cpp

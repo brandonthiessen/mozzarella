@@ -51,7 +51,7 @@ public:
     int generate_rook_moves(uint32_t *moves, bool noisy_only);
     int generate_queen_moves(uint32_t *moves, bool noisy_only);
 
-    int generate_sliding_moves(Piece piece, int deltas[], int ndeltas, uint32_t *moves, bool noisy_only);
+    int generate_sliding_moves(Piece piece, uint32_t *moves, bool noisy_only);
 
     bool move_gives_check(uint32_t move);
 

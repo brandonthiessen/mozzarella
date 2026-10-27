@@ -4,6 +4,7 @@
 
 #include "bitboard.h"
 #include "castling_rights.h"
+#include "magics.h"
 #include "masks.h"
 #include "move.h"
 #include "piece.h"
@@ -347,34 +348,41 @@ Position::generate_king_moves(uint32_t *moves, bool noisy_only)
 int
 Position::generate_bishop_moves(uint32_t *moves, bool noisy_only)
 {
-    int deltas[] = {-9, -7, 7, 9};
-    return generate_sliding_moves(Piece::BISHOP, deltas, 4, moves, noisy_only);
+    return generate_sliding_moves(
+        Piece::BISHOP, moves, noisy_only);
 }
 
 int
 Position::generate_rook_moves(uint32_t *moves, bool noisy_only)
 {
-    int deltas[] = {-8, -1, 1, 8};
-    return generate_sliding_moves(Piece::ROOK, deltas, 4, moves, noisy_only);
+    return generate_sliding_moves(
+        Piece::ROOK, moves, noisy_only);
 }
 
 int
 Position::generate_queen_moves(uint32_t *moves, bool noisy_only)
 {
-    int deltas[] = {-9, -8, -7, -1, 1, 7, 8, 9};
-    return generate_sliding_moves(Piece::QUEEN, deltas, 8, moves, noisy_only);
+    return generate_sliding_moves(
+        Piece::QUEEN, moves, noisy_only);
 }
 
 int
-Position::generate_sliding_moves(Piece piece, int deltas[], int ndeltas, uint32_t *moves, bool noisy_only)
+Position::generate_sliding_moves(Piece piece, uint32_t *moves, bool noisy_only)
 {
     Player player = player_to_move;
-    Player opponent = (Player)(1 - player);
+    Player opponent = static_cast<Player>(1 - player);
 
-    Bitboard occupied = get_occupied(player);
-    Bitboard opponent_occupied = get_occupied(opponent);
+    const Bitboard occupied = get_occupied(player);
+    const Bitboard opponent_occupied = get_occupied(opponent);
+    const Bitboard occupancy = occupied | opponent_occupied;
 
-    constexpr Piece attackable_pieces[] = {Piece::PAWN, Piece::KNIGHT, Piece::BISHOP, Piece::ROOK, Piece::QUEEN};
+    constexpr Piece attackable_pieces[] = {
+        Piece::PAWN,
+        Piece::KNIGHT,
+        Piece::BISHOP,
+        Piece::ROOK,
+        Piece::QUEEN
+    };
 
     Bitboard piece_sqs = bitboards[player][piece];
 
@@ -382,49 +390,44 @@ Position::generate_sliding_moves(Piece piece, int deltas[], int ndeltas, uint32_
     int n = 0;
 
     for (const auto piece_sq : piece_sqs) {
-        int piece_file = piece_sq % 8;
+        Bitboard attacks;
+        switch (piece) {
+            case Piece::BISHOP:
+                attacks = get_bishop_attacks(piece_sq, occupancy);
+                break;
+            case Piece::ROOK:
+                attacks = get_rook_attacks(piece_sq, occupancy);
+                break;
+            case Piece::QUEEN:
+                attacks = get_queen_attacks(piece_sq, occupancy);
+                break;
+            default: // Only bishop/rook/queen use sliding move generation
+                return n;
+        }
 
-        for (int i = 0; i < ndeltas; i++) {
-            int last_file = piece_file;
+        attacks &= ~occupied;
 
-            for (int step = 1; step < 8; step++) {
-                int to_sq = piece_sq + deltas[i] * step;
-                int to_file = to_sq % 8;
-
-                if ((to_sq < 0 || to_sq > 63)
-                    || (abs(to_file - last_file) > 1)) {
-                    break;
-                }
-
-                Bitboard to_bb{1ULL << to_sq};
-
-                if (occupied & to_bb) {
-                    break;
-                }
-
-                if (opponent_occupied & to_bb) {
-                    for (const Piece attackable_piece : attackable_pieces) {
-                        if (bitboards[opponent][attackable_piece] & to_bb) {
-                            // Always store this move - it is a capture
-                            moves[n++] = encode_move(piece_sq, to_sq, piece, attackable_piece, 0, MoveFlags::CAPTURE);
-                            break;
-                        }
-                    }
-                    break;
-                } else {
-                    // This move is not a capture
-                    uint32_t move = encode_move(piece_sq, to_sq, piece, 0, 0, 0);
-                    if (noisy_only) {
-                        // Check to see if it leads to a check
-                        if (move_gives_check(move)) {
-                            moves[n++] = move;
-                        }
-                    } else {
-                        moves[n++] = move;
+        for (const auto to_sq : attacks) {
+            const Bitboard to_bb{1ULL << to_sq};
+            if (opponent_occupied & to_bb) {
+                // Find the captured piece to encode the capture correctly
+                for (const Piece attackable_piece : attackable_pieces) { // TODO: experiment with having quicker access to what piece is on a given square
+                    if (bitboards[opponent][attackable_piece] & to_bb) {
+                        moves[n++] = encode_move(piece_sq, to_sq, piece, attackable_piece, 0, MoveFlags::CAPTURE);
+                        break;
                     }
                 }
 
-                last_file = to_file;
+                continue;
+            }
+
+            // Quiet move
+            const uint32_t move = encode_move(
+                piece_sq, to_sq, piece, 0, 0, 0
+            );
+
+            if (!noisy_only || move_gives_check(move)) {
+                moves[n++] = move;
             }
         }
     }

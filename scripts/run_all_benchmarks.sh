@@ -1,1 +1,1 @@
-for exe in ./build/release/bench/* ; do [ -x "$exe" ] && "$exe"; done
+for exe in ./build/release/bench/bench_* ; do [ -x "$exe" ] && "$exe"; done
