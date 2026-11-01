@@ -33,7 +33,12 @@ Position::Position(std::string fen)
             if ('1' <= c && c <= '8') {
                 i += (c - '1' + 1);
             } else {
-                bitboards[chtopl(c)][chtopc(c)] |= Bitboard{1ULL << i};
+                Piece piece = chtopc(c);
+                Player player = chtopl(c);
+
+                bitboards[player][piece] |= Bitboard{1ULL << i};
+                mailbox[i] = piece;
+
                 i++;
             }
         }
@@ -244,6 +249,41 @@ void Position::make_move(uint32_t move) {
     // Remove the moved piece from the original square
     bitboards[player_to_move][piece_moved] &= ~from_bb;
 
+    // Update mailbox
+    int from_sq = get_from_sq(move);
+    int to_sq = get_to_sq(move);
+
+    mailbox[from_sq] = Piece::NONE;
+    mailbox[to_sq] = (move_flags & MoveFlags::PROMO)
+        ? get_promotion(move)
+        : piece_moved;
+
+    // En passant removes a pawn from a square other than the destination.
+    if (move_flags & MoveFlags::EN_PASSANT) {
+        int captured_sq = (player_to_move == Player::WHITE)
+            ? to_sq - 8
+            : to_sq + 8;
+
+        mailbox[captured_sq] = Piece::NONE;
+    }
+
+    // Castling also moves the rook.
+    if (move_flags & MoveFlags::CASTLE) {
+        int rook_from;
+        int rook_to;
+
+        if (move_flags & MoveFlags::KING_CASTLE) {
+            rook_from = (player_to_move == Player::WHITE) ? 7 : 63;
+            rook_to   = (player_to_move == Player::WHITE) ? 5 : 61;
+        } else {
+            rook_from = (player_to_move == Player::WHITE) ? 0 : 56;
+            rook_to   = (player_to_move == Player::WHITE) ? 3 : 59;
+        }
+
+        mailbox[rook_from] = Piece::NONE;
+        mailbox[rook_to] = Piece::ROOK;
+    }
+
     // Switch the turn
     player_to_move = Player(1 - player_to_move);
 }
@@ -320,6 +360,44 @@ void Position::unmake_move(uint32_t move) {
 
     // Add the moved piece back to the original square
     bitboards[player_to_move][piece_moved] |= from_bb;
+
+    // Restore mailbox
+    int from_sq = get_from_sq(move);
+    int to_sq = get_to_sq(move);
+
+    mailbox[from_sq] = piece_moved;
+
+    // Restore destination square.
+    if (move_flags & MoveFlags::EN_PASSANT) {
+        mailbox[to_sq] = Piece::NONE;
+
+        int captured_sq = (player_to_move == Player::WHITE)
+            ? to_sq - 8
+            : to_sq + 8;
+
+        mailbox[captured_sq] = Piece::PAWN;
+    } else if (move_flags & MoveFlags::CAPTURE) {
+        mailbox[to_sq] = get_captured(move);
+    } else {
+        mailbox[to_sq] = Piece::NONE;
+    }
+
+    // Restore rook if this was castling.
+    if (move_flags & MoveFlags::CASTLE) {
+        int rook_from;
+        int rook_to;
+
+        if (move_flags & MoveFlags::KING_CASTLE) {
+            rook_from = (player_to_move == Player::WHITE) ? 7 : 63;
+            rook_to   = (player_to_move == Player::WHITE) ? 5 : 61;
+        } else {
+            rook_from = (player_to_move == Player::WHITE) ? 0 : 56;
+            rook_to   = (player_to_move == Player::WHITE) ? 3 : 59;
+        }
+
+        mailbox[rook_from] = Piece::ROOK;
+        mailbox[rook_to] = Piece::NONE;
+    }
 
     // Handle move stack and castling rights stack
     move_stack.pop_back();

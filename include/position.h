@@ -15,6 +15,7 @@ namespace mozzarella {
 class Position {
 public:
     std::array<std::array<Bitboard, 6>, 2> bitboards{}; // indexed with [player][piece]
+    std::array<Piece, 64> mailbox{};
     Player player_to_move;
     uint8_t castling_rights[2];
     int halfmoves; // currently unused

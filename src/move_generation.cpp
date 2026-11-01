@@ -179,76 +179,100 @@ int
 Position::generate_pawn_moves(uint32_t *moves, bool noisy_only)
 {
     int n = 0;
-
     Player player = player_to_move;
     Player opponent = Player (1 - player);
+
+    int direction = (player == WHITE) ? 1 : -1;
 
     Bitboard occupied = get_occupied(player);
     Bitboard opponent_occupied = get_occupied(opponent);
     Bitboard all_occupied = occupied | opponent_occupied;
     Bitboard pawn_bb = bitboards[player_to_move][Piece::PAWN];
 
-    for (const auto pawn_sq : pawn_bb) {
+    // Generate pawn attacks
 
-        Bitboard all_pawn_advances = PAWN_ADVANCE_MASKS[player][pawn_sq] & ~(all_occupied);
+    Bitboard pawn_attacks_7 = ((direction > 0 ? pawn_bb << 7 : pawn_bb >> 7) & (player == WHITE ? ~FILE_H : ~FILE_A)) & opponent_occupied;
 
-        // Edge case: a pawn cannot advance two steps if obstructed
-        // TODO: change this to use bitboards and shifting directly (there is an (incomplete) Python implementation of this)
-        if (player == Player::WHITE && 8 <= pawn_sq && pawn_sq <= 15) {
-            if (all_occupied & Bitboard{1ULL << (pawn_sq + 8)}) {
-                all_pawn_advances &= Bitboard{~(1ULL << (pawn_sq + 16))};
-            }
-        } else if (player == Player::BLACK && 48 <= pawn_sq && pawn_sq <= 55) {
-            if (all_occupied & Bitboard{1ULL << (pawn_sq - 8)}) {
-                all_pawn_advances &= Bitboard{~(1ULL << (pawn_sq - 16))};
-            }
+    Bitboard pawn_attacks_9 = ((direction > 0 ? pawn_bb << 9 : pawn_bb >> 9) & (player == WHITE ? ~FILE_A : ~FILE_H)) & opponent_occupied;
+
+    Bitboard regular_pawn_attacks_7 = pawn_attacks_7 & ~(RANK_1 | RANK_8);
+    Bitboard regular_pawn_attacks_9 = pawn_attacks_9 & ~(RANK_1 | RANK_8);
+
+    Bitboard promo_pawn_attacks_7 = pawn_attacks_7 & (RANK_1 | RANK_8);
+    Bitboard promo_pawn_attacks_9 = pawn_attacks_9 & (RANK_1 | RANK_8);
+
+    // Generate regular pawn captures
+
+    for (const auto to_sq : regular_pawn_attacks_7) {
+        int from_sq = to_sq - (7 * direction);
+        moves[n++] = encode_move(from_sq, to_sq, Piece::PAWN, mailbox[to_sq], 0, MoveFlags::CAPTURE);
+    }
+
+    for (const auto to_sq : regular_pawn_attacks_9) {
+        int from_sq = to_sq - (9 * direction);
+        moves[n++] = encode_move(from_sq, to_sq, Piece::PAWN, mailbox[to_sq], 0, MoveFlags::CAPTURE);
+    }
+
+    // Generate pawn capture promotions
+
+    for (const auto to_sq : promo_pawn_attacks_7) {
+        int from_sq = to_sq - (7 * direction);
+
+        moves[n++] = encode_move(from_sq, to_sq, Piece::PAWN, mailbox[to_sq], Piece::QUEEN, MoveFlags::CAPTURE | MoveFlags::QUEEN_PROMO);
+        moves[n++] = encode_move(from_sq, to_sq, Piece::PAWN, mailbox[to_sq], Piece::ROOK, MoveFlags::CAPTURE | MoveFlags::ROOK_PROMO);
+        moves[n++] = encode_move(from_sq, to_sq, Piece::PAWN, mailbox[to_sq], Piece::BISHOP, MoveFlags::CAPTURE | MoveFlags::BISHOP_PROMO);
+        moves[n++] = encode_move(from_sq, to_sq, Piece::PAWN, mailbox[to_sq], Piece::KNIGHT, MoveFlags::CAPTURE | MoveFlags::KNIGHT_PROMO);
+    }
+
+    for (const auto to_sq : promo_pawn_attacks_9) {
+        int from_sq = to_sq - (9 * direction);
+
+        moves[n++] = encode_move(from_sq, to_sq, Piece::PAWN, mailbox[to_sq], Piece::QUEEN, MoveFlags::CAPTURE | MoveFlags::QUEEN_PROMO);
+        moves[n++] = encode_move(from_sq, to_sq, Piece::PAWN, mailbox[to_sq], Piece::ROOK, MoveFlags::CAPTURE | MoveFlags::ROOK_PROMO);
+        moves[n++] = encode_move(from_sq, to_sq, Piece::PAWN, mailbox[to_sq], Piece::BISHOP, MoveFlags::CAPTURE | MoveFlags::BISHOP_PROMO);
+        moves[n++] = encode_move(from_sq, to_sq, Piece::PAWN, mailbox[to_sq], Piece::KNIGHT, MoveFlags::CAPTURE | MoveFlags::KNIGHT_PROMO);
+    }
+
+    // Generate pawn advances
+
+    Bitboard all_pawn_advances = (direction > 0 ? pawn_bb << 8 : pawn_bb >> 8) & ~all_occupied;
+
+    Bitboard regular_pawn_advances = all_pawn_advances & ~(RANK_1 | RANK_8);
+
+    Bitboard promo_pawn_advances = all_pawn_advances & (RANK_1 | RANK_8);
+
+    Bitboard starting_rank = (player == WHITE) ? RANK_2 : RANK_7;
+
+    Bitboard double_pawn_advances =
+        (direction > 0 ? (pawn_bb & starting_rank) << 16 : (pawn_bb & starting_rank) >> 16) &
+        ~(all_occupied | (direction > 0 ? all_occupied << 8 : all_occupied >> 8));
+
+    // Generate regular pawn advances
+
+    if (!noisy_only) {
+        for (const auto to_sq : regular_pawn_advances) {
+            int from_sq = to_sq - (8 * direction);
+            moves[n++] = encode_move(from_sq, to_sq, Piece::PAWN, 0, 0, 0);
         }
+    }
 
-        // This is kind of ridiculous.
-        // Why am I iterating over a mask which will (83% of the time) have one item?
-        for (const auto to_sq : all_pawn_advances) {
+    // Generate pawn advance promotions
 
-            uint32_t flags = 0;
+    for (const auto to_sq : promo_pawn_advances) {
+        int from_sq = to_sq - (8 * direction);
 
-            // If the target square is a promotion
-            if ((56 * (opponent)) <= to_sq && to_sq <= (7 + 56 * (opponent))) {
-                moves[n++] = encode_move(pawn_sq, to_sq, Piece::PAWN, 0, Piece::QUEEN, MoveFlags::QUEEN_PROMO);
-                moves[n++] = encode_move(pawn_sq, to_sq, Piece::PAWN, 0, Piece::ROOK, MoveFlags::ROOK_PROMO);
-                moves[n++] = encode_move(pawn_sq, to_sq, Piece::PAWN, 0, Piece::BISHOP, MoveFlags::BISHOP_PROMO);
-                moves[n++] = encode_move(pawn_sq, to_sq, Piece::PAWN, 0, Piece::KNIGHT, MoveFlags::KNIGHT_PROMO);
-                break;
-            }
-            if (std::abs(pawn_sq - to_sq) == 16) {
-                flags = DOUBLE_PAWN_PUSH;
-            }
-            if (noisy_only) {
-                uint32_t move = encode_move(pawn_sq, to_sq, Piece::PAWN, 0, 0, flags);
-                if (move_gives_check(move)) {
-                    moves[n++] = move;
-                }
-            } else {
-                moves[n++] = encode_move(pawn_sq, to_sq, Piece::PAWN, 0, 0, flags);
-            }
-        }
+        moves[n++] = encode_move(from_sq, to_sq, Piece::PAWN, 0, Piece::QUEEN, MoveFlags::QUEEN_PROMO);
+        moves[n++] = encode_move(from_sq, to_sq, Piece::PAWN, 0, Piece::ROOK, MoveFlags::ROOK_PROMO);
+        moves[n++] = encode_move(from_sq, to_sq, Piece::PAWN, 0, Piece::BISHOP, MoveFlags::BISHOP_PROMO);
+        moves[n++] = encode_move(from_sq, to_sq, Piece::PAWN, 0, Piece::KNIGHT, MoveFlags::KNIGHT_PROMO);
+    }
 
-        Bitboard all_pawn_attacks = PAWN_ATTACK_MASKS[player][pawn_sq] & opponent_occupied;
+    // Generate double pawn advances
 
-        constexpr Piece attackable_pieces[] = {Piece::PAWN, Piece::KNIGHT, Piece::BISHOP, Piece::ROOK, Piece::QUEEN};
-
-        for (const auto to_sq : all_pawn_attacks) {
-
-            for (Piece attackable_piece: attackable_pieces) {
-                if (bitboards[opponent][attackable_piece] & Bitboard{1ULL << to_sq}) {
-                    if ((56 * opponent) <= to_sq && to_sq <= (7 + 56 * opponent)) {
-                        moves[n++] = encode_move(pawn_sq, to_sq, Piece::PAWN, attackable_piece, Piece::QUEEN, MoveFlags::QUEEN_PROMO | MoveFlags::CAPTURE);
-                        moves[n++] = encode_move(pawn_sq, to_sq, Piece::PAWN, attackable_piece, Piece::ROOK, MoveFlags::ROOK_PROMO | MoveFlags::CAPTURE);
-                        moves[n++] = encode_move(pawn_sq, to_sq, Piece::PAWN, attackable_piece, Piece::BISHOP, MoveFlags::BISHOP_PROMO | MoveFlags::CAPTURE);
-                        moves[n++] = encode_move(pawn_sq, to_sq, Piece::PAWN, attackable_piece, Piece::KNIGHT, MoveFlags::KNIGHT_PROMO | MoveFlags::CAPTURE);
-                        break;
-                    }
-                    moves[n++] = encode_move(pawn_sq, to_sq, Piece::PAWN, attackable_piece, 0, MoveFlags::CAPTURE);
-                }
-            }
+    if (!noisy_only) {
+        for (const auto to_sq : double_pawn_advances) {
+            int from_sq = to_sq - (16 * direction);
+            moves[n++] = encode_move(from_sq, to_sq, Piece::PAWN, 0, 0, MoveFlags::DOUBLE_PAWN_PUSH);
         }
     }
 
@@ -410,14 +434,7 @@ Position::generate_sliding_moves(Piece piece, uint32_t *moves, bool noisy_only)
         for (const auto to_sq : attacks) {
             const Bitboard to_bb{1ULL << to_sq};
             if (opponent_occupied & to_bb) {
-                // Find the captured piece to encode the capture correctly
-                for (const Piece attackable_piece : attackable_pieces) { // TODO: experiment with having quicker access to what piece is on a given square
-                    if (bitboards[opponent][attackable_piece] & to_bb) {
-                        moves[n++] = encode_move(piece_sq, to_sq, piece, attackable_piece, 0, MoveFlags::CAPTURE);
-                        break;
-                    }
-                }
-
+                moves[n++] = encode_move(piece_sq, to_sq, piece, mailbox[to_sq], 0, MoveFlags::CAPTURE);
                 continue;
             }
 

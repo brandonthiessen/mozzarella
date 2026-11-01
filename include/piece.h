@@ -8,10 +8,11 @@ enum Piece : uint8_t {
     BISHOP,
     ROOK,
     QUEEN,
-    KING
+    KING,
+    NONE
 };
 
 constexpr int piece_value(Piece piece) {
-    constexpr int values[] = {100, 320, 330, 500, 900, 0};
+    constexpr int values[] = {100, 320, 330, 500, 900, 0, 0};
     return values[piece];
 }

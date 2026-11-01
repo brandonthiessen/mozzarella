@@ -85,4 +85,22 @@ inline constexpr Bitboard W_KS_CASTLE_MASK{0x60};
 inline constexpr Bitboard B_QS_CASTLE_MASK{0xE00000000000000};
 inline constexpr Bitboard B_KS_CASTLE_MASK{0x6000000000000000};
 
+inline constexpr Bitboard RANK_1{0x00000000000000FFULL};
+inline constexpr Bitboard RANK_2{0x000000000000FF00ULL};
+inline constexpr Bitboard RANK_3{0x0000000000FF0000ULL};
+inline constexpr Bitboard RANK_4{0x00000000FF000000ULL};
+inline constexpr Bitboard RANK_5{0x000000FF00000000ULL};
+inline constexpr Bitboard RANK_6{0x0000FF0000000000ULL};
+inline constexpr Bitboard RANK_7{0x00FF000000000000ULL};
+inline constexpr Bitboard RANK_8{0xFF00000000000000ULL};
+
+inline constexpr Bitboard FILE_A{0x0101010101010101ULL};
+inline constexpr Bitboard FILE_B{0x0202020202020202ULL};
+inline constexpr Bitboard FILE_C{0x0404040404040404ULL};
+inline constexpr Bitboard FILE_D{0x0808080808080808ULL};
+inline constexpr Bitboard FILE_E{0x1010101010101010ULL};
+inline constexpr Bitboard FILE_F{0x2020202020202020ULL};
+inline constexpr Bitboard FILE_G{0x4040404040404040ULL};
+inline constexpr Bitboard FILE_H{0x8080808080808080ULL};
+
 } // namespace mozzarella
