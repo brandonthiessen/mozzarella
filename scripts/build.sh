@@ -43,10 +43,11 @@ cmake -S . -B "$BUILD_DIR" \
     -DCMAKE_BUILD_TYPE="$CMAKE_CONFIG" \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
     -DMOZZARELLA_BUILD_TESTS="$BUILD_TESTS" \
-    -DMOZZARELLA_BUILD_BENCHMARKS="$BUILD_BENCHMARKS"
+    -DMOZZARELLA_BUILD_BENCHMARKS="$BUILD_BENCHMARKS" \
+    -G Ninja
 
 ln -sf "$BUILD_DIR/compile_commands.json" compile_commands.json
 
-cmake --build "$BUILD_DIR" --parallel
+cmake --build "$BUILD_DIR"
 
 ln -sf "$BUILD_DIR/mozzarella" mozzarella
